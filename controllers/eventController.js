@@ -64,7 +64,7 @@ class eventController {
 
   // Método para actualizar un evento existente
   static async updateEvent(req, res) {
-    const eventData = req.body; // Los datos enviados en el cuerpo de la solicitud
+    const eventData = req.body; // Datos enviados en la solicitud
     if (eventData.capacidadMaxima <= eventData.lugaresDisponibles) {
       return res.status(400).json({
         message:
@@ -81,11 +81,15 @@ class eventController {
         message: `El número de participantes excede la capacidad máxima de ${eventData.capacidadMaxima}`,
       });
     }
+
     try {
-      await Event.updateEvent(req.params.id, req.body); // Llama al modelo para actualizar el evento por ID
-      res.json({ message: "Evento actualizado correctamente" }); // Mensaje de éxito
+      await Event.updateEvent(req.params.id, eventData); // Actualiza el evento con los datos completos
+      res.json({
+        message: "Evento actualizado correctamente",
+        ...eventData, // Devuelve todo el body params actualizado
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message }); // Manejo de errores internos del servidor
+      res.status(500).json({ error: error.message }); // Manejo de errores
     }
   }
 
@@ -102,7 +106,7 @@ class eventController {
   static async enviarRecordatorio(req, res) {
     try {
       const eventId = req.params.id;
-      console.log(`Buscando evento con ID: ${eventId}`);
+      //console.log(`Buscando evento con ID: ${eventId}`);
 
       const eventDoc = await collection.doc(eventId).get();
       if (!eventDoc.exists) {
@@ -110,7 +114,7 @@ class eventController {
       }
 
       const eventData = eventDoc.data();
-      const fechaEvento = new Date(eventData.fechaInicio._seconds * 1000);
+      const fechaEvento = new Date(eventData.fechaInicio); // Fecha de inicio
       const fechaActual = new Date();
 
       // Calculamos la diferencia de días entre la fecha actual y la fecha del evento
