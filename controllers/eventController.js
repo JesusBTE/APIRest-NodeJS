@@ -67,31 +67,87 @@ class eventController {
 
   // Método para actualizar un evento existente
   static async updateEvent(req, res) {
+    //Obtener los datos enviados en la solicitud (en el cuerpo de la solicitud).
     const eventData = req.body; // Datos enviados en la solicitud
+
+    //Buscar el evento actual en la base de datos usando el ID
+    const existingEvent = await Event.getEventById(req.params.id); // Obtener el evento actual
+
+    //Verificar si el evento existe.
+    if (!existingEvent) {
+      // Si no se encuentra el evento, enviar una respuesta con un error 404.
+      return res.status(404).json({ message: "Evento no encontrado" });
+    }
+
+    //Verificar que los lugares disponibles no sean mayores que la capacidad máxima.
     if (eventData.capacidadMaxima <= eventData.lugaresDisponibles) {
+      // Si la capacidad máxima es menor o igual a los lugares disponibles, se genera un error.
       return res.status(400).json({
         message:
           "Los lugares disponibles no pueden ser mayores que la capacidad máxima",
       });
     }
 
-    // Verifica si el número de participantes excede la capacidad máxima
+    // Verificar si el número total de participantes no excede la capacidad máxima del evento.
     if (
       eventData.participantes &&
       eventData.participantes.length > eventData.capacidadMaxima
     ) {
+      // Si la cantidad de participantes excede la capacidad máxima, se genera un error.
       return res.status(400).json({
         message: `El número de participantes excede la capacidad máxima de ${eventData.capacidadMaxima}`,
       });
     }
 
+    // Obtener los participantes anteriores del evento (si los hay).
+    const participantesAnteriores = existingEvent.participantes || [];
+    // Si no existen participantes anteriores, se asigna un array vacío.
+
+    // Obtener los nuevos participantes que vienen con la actualización del evento.
+    const participantesNuevos = eventData.participantes || [];
+    // Si no hay nuevos participantes, se asigna un array vacío.
+
+    // Calcular la cantidad de participantes que ya han confirmado su asistencia en el evento anterior.
+    const participantesConfirmados = participantesAnteriores.filter(
+      (p) => p.asistenciaConfirmada
+    ).length;
+    // Usamos `filter` para obtener solo los participantes cuya propiedad `asistenciaConfirmada` sea `true`.
+
+    // Calcular la cantidad de nuevos participantes que han confirmado asistencia.
+    const nuevosParticipantesConfirmados = participantesNuevos.filter(
+      (p) => p.asistenciaConfirmada
+    ).length;
+    // De la misma manera que en el paso anterior, solo contamos los participantes con `asistenciaConfirmada`.
+
+    // Calcular el total de participantes confirmados sumando los anteriores y los nuevos confirmados.
+    const totalParticipantesConfirmados =
+      participantesConfirmados + nuevosParticipantesConfirmados;
+    // Es la suma de los participantes confirmados en el evento anterior más los nuevos confirmados.
+
+    // Calcular la cantidad de lugares disponibles restando los participantes confirmados de la capacidad máxima.
+    eventData.lugaresDisponibles =
+      eventData.capacidadMaxima - totalParticipantesConfirmados;
+    // Si hay 100 lugares y 50 confirmados, `lugaresDisponibles` será 50.
+
+    // Asegurarse de que los lugares disponibles no sean negativos.
+    if (eventData.lugaresDisponibles < 0) {
+      // Si por alguna razón, la cantidad de lugares disponibles es negativa, ajustamos a 0.
+      eventData.lugaresDisponibles = 0;
+    }
+
     try {
-      await Event.updateEvent(req.params.id, eventData); // Actualiza el evento con los datos completos
+      //Intentamos actualizar el evento en la base de datos con los datos completos.
+      await Event.updateEvent(req.params.id, eventData);
+
+      // Si la actualización es exitosa, enviamos una respuesta con los datos actualizados del evento.
       res.json({
         message: "Evento actualizado correctamente",
-        ...eventData, // Devuelve todo el body params actualizado
+        eventData: {
+          ...eventData, // Devuelve todo el body params actualizado
+        },
       });
     } catch (error) {
+      // Si ocurre un error durante la actualización, enviamos una respuesta con el error.
       res.status(404).json({
         message: "No se pudo actualizar el evento",
         error: error.message,
