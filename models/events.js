@@ -40,26 +40,103 @@ class Event {
     return { id, message: "Event deleted" }; // Mensaje de confirmación
   }
 
-  static async enviarRecordatorio(eventId) {
+  static async confirmarAsistencia(req, res) {
     try {
-      const docRef = collection.doc(eventId);
-      const event = await docRef.get();
+      const { id, email } = req.params;
 
-      if (!event.exists) throw new Error("Evento no encontrado");
-
-      const eventData = event.data();
-      if (!eventData.participantes || eventData.participantes.length === 0) {
-        throw new Error("No hay participantes inscritos en este evento");
+      // Buscar el evento
+      const eventDoc = await collection.doc(id).get();
+      if (!eventDoc.exists) {
+        return res.status(404).json({ message: "Evento no encontrado" });
       }
 
-      // Simulación de envío de recordatorios (aquí podrías usar nodemailer o Firebase Cloud Messaging)
-      eventData.participantes.forEach((participante) => {
-        console.log(`Enviando recordatorio a: ${participante.correo}`);
-      });
+      // Obtener la lista de participantes
+      const eventData = eventDoc.data();
+      const participantes = eventData.participantes || [];
 
-      return { message: "Recordatorios enviados correctamente" };
+      // Buscar al participante por correo
+      const participanteIndex = participantes.findIndex(
+        (p) => p.correo === email
+      );
+
+      if (participanteIndex === -1) {
+        return res.status(404).json({
+          message: "Participante no encontrado en este evento",
+        });
+      }
+
+      // Validar si ya confirmó asistencia
+      if (participantes[participanteIndex].asistenciaConfirmada) {
+        return res.status(400).json({
+          message: "La asistencia ya fue confirmada previamente",
+        });
+      }
+
+      // Confirmar asistencia
+      participantes[participanteIndex].asistenciaConfirmada = true;
+
+      // Actualizar en la base de datos
+      await collection.doc(id).update({ participantes });
+
+      return res.status(200).json({
+        message: "Asistencia confirmada exitosamente",
+        participante: participantes[participanteIndex],
+      });
     } catch (error) {
-      throw new Error("Error al enviar recordatorios: " + error.message);
+      res.status(401).json({
+        message: "Error al confirmar asistencia",
+        error: error.message,
+      });
+    }
+  }
+
+  static async confirmarAsistencia(req, res) {
+    try {
+      const { id, email } = req.params;
+
+      // Buscar el evento
+      const eventDoc = await collection.doc(id).get();
+      if (!eventDoc.exists) {
+        return res.status(404).json({ message: "Evento no encontrado" });
+      }
+
+      // Obtener la lista de participantes
+      const eventData = eventDoc.data();
+      const participantes = eventData.participantes || [];
+
+      // Buscar al participante por correo
+      const participanteIndex = participantes.findIndex(
+        (p) => p.correo === email
+      );
+
+      if (participanteIndex === -1) {
+        return res.status(404).json({
+          message: "Participante no encontrado en este evento",
+        });
+      }
+
+      // Validar si ya confirmó asistencia
+      if (participantes[participanteIndex].asistenciaConfirmada) {
+        return res.status(400).json({
+          message: "La asistencia ya fue confirmada previamente",
+        });
+      }
+
+      // Confirmar asistencia
+      participantes[participanteIndex].asistenciaConfirmada = true;
+
+      // Actualizar en la base de datos
+      await collection.doc(id).update({ participantes });
+
+      return res.status(200).json({
+        message: "Asistencia confirmada exitosamente",
+        participante: participantes[participanteIndex],
+      });
+    } catch (error) {
+      res.status(401).json({
+        message: "Error al confirmar asistencia",
+        error: error.message,
+      });
     }
   }
 }

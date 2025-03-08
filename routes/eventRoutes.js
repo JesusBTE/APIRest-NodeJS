@@ -24,6 +24,7 @@ router.delete("/:id", eventController.deleteEvent);
 
 router.post("/:id/recordatorio", eventController.enviarRecordatorio);
 
+router.patch("/:id/confirmar/:email", eventController.confirmarAsistencia);
 
 // Exportamos el router para que pueda ser utilizado en la aplicación principal
 module.exports = router;

@@ -11,7 +11,10 @@ class eventController {
       const events = await Event.getAllEvents(); // Llama al modelo para obtener todas los eventos
       res.json(events); // Devuelve la lista de eventos en formato JSON
     } catch (error) {
-      res.status(500).json({ error: error.message }); // Manejo de errores internos del servidor
+      res.status(400).json({
+        error: "No se pudieron obtener los eventos",
+        error: error.message,
+      });
     }
   }
 
@@ -57,7 +60,7 @@ class eventController {
     } catch (error) {
       console.error("Error al crear el evento:", error);
       res
-        .status(500)
+        .status(400)
         .json({ message: "Error al crear el evento", error: error.message });
     }
   }
@@ -89,7 +92,10 @@ class eventController {
         ...eventData, // Devuelve todo el body params actualizado
       });
     } catch (error) {
-      res.status(500).json({ error: error.message }); // Manejo de errores
+      res.status(404).json({
+        message: "No se pudo actualizar el evento",
+        error: error.message,
+      });
     }
   }
 
@@ -99,7 +105,7 @@ class eventController {
       await Event.deleteEvent(req.params.id); // Llama al modelo para eliminar el evento por ID
       res.json({ message: "Evento eliminado correctamente" }); // Mensaje de éxito
     } catch (error) {
-      res.status(500).json({ error: error.message }); // Manejo de errores internos del servidor
+      res.status(400).json({ error: error.message }); // Manejo de errores internos del servidor
     }
   }
 
@@ -151,10 +157,68 @@ class eventController {
       });
     } catch (error) {
       console.error(`Error al enviar recordatorio: ${error}`);
-      return res.status(500).json({
+      return res.status(400).json({
         message: "Error al enviar recordatorio",
         error: error.message,
       });
+    }
+  }
+  static async confirmarAsistencia(req, res) {
+    try {
+      // Obtener 'id' y 'email' desde los parámetros de la ruta de la solicitud.
+      const { id, email } = req.params;
+
+      // Crear una referencia al documento del evento usando el 'id' proporcionado.
+      const docRef = collection.doc(id);
+
+      // Obtener los datos del evento de Firestore usando la referencia creada.
+      const event = await docRef.get();
+
+      // Verificar si el evento no existe. Si no existe, lanzar un error.
+      if (!event.exists) throw new Error("Evento no encontrado");
+
+      // Obtener los datos del evento en formato JSON.
+      const eventData = event.data();
+
+      // Si no existen participantes en el evento, inicializar un arreglo vacío.
+      const participantes = eventData.participantes || [];
+
+      // Buscar el participante cuyo correo coincida con el proporcionado en los parámetros.
+      const participanteIndex = participantes.findIndex(
+        (p) => p.correo === email
+      );
+
+      // Si no se encuentra al participante en el arreglo, enviar un mensaje de error.
+      if (participanteIndex === -1) {
+        return res
+          .status(404) // Not Found: El participante no fue encontrado en el evento.
+          .json({ message: "Participante no encontrado en este evento" });
+      }
+
+      // Verificar si el participante ya ha confirmado su asistencia.
+      if (participantes[participanteIndex].asistenciaConfirmada) {
+        // Si la asistencia ya fue confirmada previamente, enviar un mensaje de error.
+        return res
+          .status(400) // La asistencia ya ha sido confirmada previamente.
+          .json({ message: "La asistencia ya fue confirmada previamente" });
+      }
+
+      // Si no se ha confirmado la asistencia previamente, marcar la asistencia como confirmada.
+      participantes[participanteIndex].asistenciaConfirmada = true;
+
+      // Actualizar el documento de Firestore con la lista de participantes modificada.
+      await docRef.update({ participantes });
+
+      // Responder con un mensaje exitoso y los datos del participante cuya asistencia fue confirmada.
+      return res.json({
+        message: "Asistencia confirmada exitosamente",
+        participante: participantes[participanteIndex],
+      });
+    } catch (error) {
+      // Código de estado 400 para indicar que hay un problema con los datos o la solicitud.
+      return res
+        .status(400)
+        .json({ message: "No se pudo confirmar la asistencia" });
     }
   }
 }
