@@ -9,11 +9,10 @@ class eventController {
   static async getEvents(req, res) {
     try {
       const events = await Event.getAllEvents(); // Llama al modelo para obtener todas los eventos
-      res.json(events); // Devuelve la lista de eventos en formato JSON
+      res.status(200).json(events); // Devuelve la lista de eventos en formato JSON
     } catch (error) {
       res.status(400).json({
         error: "No se pudieron obtener los eventos",
-        error: error.message,
       });
     }
   }
@@ -22,7 +21,7 @@ class eventController {
   static async getEventById(req, res) {
     try {
       const event = await Event.getEventById(req.params.id); // Llama al modelo para buscar el evento por ID
-      res.json(event); // Si el evento existe, lo devuelve en formato JSON
+      res.status(200).json(event); // Si el evento existe, lo devuelve en formato JSON
     } catch (error) {
       res.status(404).json({ error: "Evento no encontrado" }); // Error si el evento no existe
     }
@@ -140,7 +139,7 @@ class eventController {
       await Event.updateEvent(req.params.id, eventData);
 
       // Si la actualización es exitosa, enviamos una respuesta con los datos actualizados del evento.
-      res.json({
+      res.status(200).json({
         message: "Evento actualizado correctamente",
         eventData: {
           ...eventData, // Devuelve todo el body params actualizado
@@ -150,7 +149,6 @@ class eventController {
       // Si ocurre un error durante la actualización, enviamos una respuesta con el error.
       res.status(404).json({
         message: "No se pudo actualizar el evento",
-        error: error.message,
       });
     }
   }
@@ -159,9 +157,11 @@ class eventController {
   static async deleteEvent(req, res) {
     try {
       await Event.deleteEvent(req.params.id); // Llama al modelo para eliminar el evento por ID
-      res.json({ message: "Evento eliminado correctamente" }); // Mensaje de éxito
+      res.status(200).json({ message: "Evento eliminado correctamente" }); // Mensaje de éxito
     } catch (error) {
-      res.status(400).json({ error: error.message }); // Manejo de errores internos del servidor
+      res
+        .status(400)
+        .json({ message: "No se pudo eliminar el evento, inténtalo de nuevo" }); // Mensaje más amigable
     }
   }
 
@@ -193,7 +193,7 @@ class eventController {
       }
 
       if (!eventData.participantes || eventData.participantes.length === 0) {
-        return res.json({
+        return res.json(400).json({
           message: "No hay participantes para enviar recordatorios",
         });
       }
@@ -205,7 +205,7 @@ class eventController {
         }" será el ${fechaEvento.toLocaleString()}`,
       }));
 
-      return res.json({
+      return res.status(200).json({
         message: "Recordatorio enviado",
         evento: {
           participantes: recordatorios, // Los correos y mensajes de los participantes
@@ -266,7 +266,7 @@ class eventController {
       await docRef.update({ participantes });
 
       // Responder con un mensaje exitoso y los datos del participante cuya asistencia fue confirmada.
-      return res.json({
+      return res.status(200).json({
         message: "Asistencia confirmada exitosamente",
         participante: participantes[participanteIndex],
       });
