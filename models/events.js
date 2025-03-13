@@ -67,7 +67,7 @@ class Event {
     return { id, message: "Evento elimanado" }; // Mensaje de confirmación
   }
 
-  static async confirmarAsistencia(req, res) {
+  static async confirmAttendance(req, res) {
     try {
       const { id, email } = req.params;
 

@@ -22,9 +22,9 @@ router.put("/:id", eventController.updateEvent);
 // Eliminar una evento por su ID
 router.delete("/:id", eventController.deleteEvent);
 
-router.post("/:id/recordatorio", eventController.enviarRecordatorio);
+router.post("/:id/recordatorio", eventController.notification);
 
-router.patch("/:id/confirmar/:email", eventController.confirmarAsistencia);
+router.patch("/:id/confirmar/:email", eventController.confirmAttendance);
 
 // Exportamos el router para que pueda ser utilizado en la aplicación principal
 module.exports = router;

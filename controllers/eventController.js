@@ -164,7 +164,7 @@ class eventController {
     }
   }
 
-  static async enviarRecordatorio(req, res) {
+  static async notification(req, res) {
     try {
       const eventId = req.params.id;
       //console.log(`Buscando evento con ID: ${eventId}`);
@@ -218,7 +218,7 @@ class eventController {
       });
     }
   }
-  static async confirmarAsistencia(req, res) {
+  static async confirmAttendance(req, res) {
     try {
       // Obtener 'id' y 'email' desde los parámetros de la ruta de la solicitud.
       const { id, email } = req.params;
