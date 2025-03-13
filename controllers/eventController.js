@@ -1,4 +1,4 @@
-// Importamos el modelo Task para interactuar con la base de datos
+// Importamos el modelo Events para interactuar con la base de datos
 const Event = require("../models/events");
 const admin = require("../config/config");
 const db = admin.firestore();
@@ -28,7 +28,6 @@ class eventController {
   }
 
   // Método para crear un nuevo evento
-  // Controlador para crear un nuevo evento
   static async createEvent(req, res) {
     try {
       const eventData = req.body; // Los datos enviados en el cuerpo de la solicitud
@@ -161,7 +160,7 @@ class eventController {
     } catch (error) {
       res
         .status(400)
-        .json({ message: "No se pudo eliminar el evento, inténtalo de nuevo" }); // Mensaje más amigable
+        .json({ message: "No se pudo eliminar el evento, inténtalo de nuevo" });
     }
   }
 
